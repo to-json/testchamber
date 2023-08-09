@@ -146,38 +146,38 @@ struct Process {
 }
 
 impl Process {
-    fn trace(
-        &mut self,
-        memory_table: &mut dyn MemLookup,
-        syscall_table: &SyscallTable,
-    ) -> Result<&mut Process, Box<dyn std::error::Error>> {
-        // every syscall has an entrance and exit point. in order to only log the
-        // syscall once, we toggle a var every loop
-        let mut is_sys_exit = false;
-        let child_pid = self.pid.unwrap();
-        loop {
-            ptrace::syscall(child_pid, None)?;
-            if is_sys_exit {
-                let wp = waitpid(child_pid, None)?;
-                match wp {
-                    WaitStatus::Exited(_, _) => {
-                        println!("exited");
-                        break;
-                    }
-                    _ => {
-                        let regs = ptrace::getregs(child_pid)?;
-                        let normalized_regs = NormalizedRegs::from_regs(&regs, memory_table);
-                        print_normalized_syscall(normalized_regs, &syscall_table);
-                    }
-                }
-            } else {
-                waitpid(child_pid, None)?;
-            }
-
-            is_sys_exit = !is_sys_exit;
-        }
-        Ok(self)
-    }
+    // fn trace(
+    //     &mut self,
+    //     memory_table: &mut dyn MemLookup,
+    //     syscall_table: &SyscallTable,
+    // ) -> Result<&mut Process, Box<dyn std::error::Error>> {
+    //     // every syscall has an entrance and exit point. in order to only log the
+    //     // syscall once, we toggle a var every loop
+    //     let mut is_sys_exit = false;
+    //     let child_pid = self.pid.unwrap();
+    //     loop {
+    //         ptrace::syscall(child_pid, None)?;
+    //         if is_sys_exit {
+    //             let wp = waitpid(child_pid, None)?;
+    //             match wp {
+    //                 WaitStatus::Exited(_, _) => {
+    //                     println!("exited");
+    //                     break;
+    //                 }
+    //                 _ => {
+    //                     let regs = ptrace::getregs(child_pid)?;
+    //                     let normalized_regs = NormalizedRegs::from_regs(&regs, memory_table);
+    //                     print_normalized_syscall(normalized_regs, &syscall_table);
+    //                 }
+    //             }
+    //         } else {
+    //             waitpid(child_pid, None)?;
+    //         }
+    //
+    //         is_sys_exit = !is_sys_exit;
+    //     }
+    //     Ok(self)
+    // }
     fn spawn(&mut self) -> &mut Process {
         let child = self.command.as_mut().unwrap().spawn().unwrap();
         let child_pid = Pid::from_raw(child.id() as _);
@@ -219,6 +219,38 @@ impl Process {
     }
 }
 
+fn trace<'a>(
+    process: &'a mut Process,
+    memory_table: &mut dyn MemLookup,
+    syscall_table: &SyscallTable,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // every syscall has an entrance and exit point. in order to only log the
+    // syscall once, we toggle a var every loop
+    let mut is_sys_exit = false;
+    let child_pid = process.pid.unwrap();
+    loop {
+        ptrace::syscall(child_pid, None)?;
+        if is_sys_exit {
+            let wp = waitpid(child_pid, None)?;
+            match wp {
+                WaitStatus::Exited(_, _) => {
+                    println!("exited");
+                    break;
+                }
+                _ => {
+                    let regs = ptrace::getregs(child_pid)?;
+                    let normalized_regs = NormalizedRegs::from_regs(&regs, memory_table);
+                    print_normalized_syscall(normalized_regs, &syscall_table);
+                }
+            }
+        } else {
+            waitpid(child_pid, None)?;
+        }
+
+        is_sys_exit = !is_sys_exit;
+    }
+    Ok(())
+}
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
@@ -238,10 +270,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let syscall_table = load_syscall_table(PathBuf::from(cli.syscall_table_path))?;
     let mut memory_table = MetaMemoryTable::new();
     let (executable, args) = cli.command.split_first().unwrap();
-    let _cmd = Process::new(executable.to_string(), Some(args.into()))
-        .build_command()
-        .set_pre_exec()
-        .spawn()
-        .trace(&mut memory_table, &syscall_table);
-    Ok(())
+    let mut cmd = Process::new(executable.to_string(), Some(args.into()));
+    cmd.build_command().set_pre_exec() .spawn();
+        // .trace(&mut memory_table, &syscall_table);
+    trace(&mut cmd, &mut memory_table, &syscall_table)
+    // Ok(())
 }
