@@ -1,4 +1,4 @@
-# Project Title
+# Testchamber
 
 A tool for reproducible behaviour testing in a black-box kinda way,
 inspired by [fasterthanlime][1]'s project [rue][2] and the [video][3]
@@ -83,8 +83,8 @@ I mentioned [rue][1] and [timeless][4] above; I also used a pretty cool
 [readme template][5] I found on github. Shouts out to the Linux community
 as well; this would be much more difficult on other OSes.
 
-[1] https://fasterthanli.me
-[2] https://github.com/fasterthanlime/rue/blob/main/src/main.rs
-[3] https://www.youtube.com/watch?v=engduNoI6DE
-[4] https://github.com/polydawn/timeless
-[5] https://gist.githubusercontent.com/DomPizzie/7a5ff55ffa9081f2de27c315f5018afc/raw/d59043abbb123089ad6602aba571121b71d91d7f/README-Template.md
+[1]: https://fasterthanli.me
+[2]: https://github.com/fasterthanlime/rue/blob/main/src/main.rs
+[3]: https://www.youtube.com/watch?v=engduNoI6DE
+[4]: https://github.com/polydawn/timeless
+[5]: https://gist.githubusercontent.com/DomPizzie/7a5ff55ffa9081f2de27c315f5018afc/raw/d59043abbb123089ad6602aba571121b71d91d7f/README-Template.md
