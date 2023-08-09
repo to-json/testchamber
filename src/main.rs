@@ -1,9 +1,7 @@
 use std::{
     collections::HashMap,
     fs::File,
-    os::unix::process::CommandExt,
     path::PathBuf,
-    process::{Child, Command},
 };
 
 use clap::Parser;
@@ -13,9 +11,11 @@ use nix::{
         ptrace,
         wait::{waitpid, WaitStatus},
     },
-    unistd::Pid,
 };
 use owo_colors::OwoColorize;
+
+mod process;
+use process::Process;
 
 type SyscallKey = [u64; 2];
 
@@ -134,55 +134,6 @@ fn load_syscall_table(path: PathBuf) -> Result<HashMap<u64, String>, Box<dyn std
     Ok(syscall_table)
 }
 
-struct Process {
-    executable: String,
-    args: Option<Vec<String>>,
-    command: Option<Command>,
-    pid: Option<Pid>,
-    process: Option<Child>,
-}
-
-impl Process {
-    fn spawn(&mut self) -> &mut Process {
-        let child = self.command.as_mut().unwrap().spawn().unwrap();
-        let child_pid = Pid::from_raw(child.id() as _);
-        self.pid = Some(child_pid);
-        self.process = Some(child);
-        self
-    }
-
-    fn set_pre_exec(&mut self) -> &mut Process {
-        // command.pre_exec is intrinsically 'unsafe'
-        unsafe {
-            self.command.as_mut().unwrap().pre_exec(|| {
-                let mut filter =
-                    libseccomp::ScmpFilterContext::new(libseccomp::ScmpAction::Allow).unwrap();
-                let _ = filter.add_arch(libseccomp::ScmpArch::X8664);
-                let _ = filter.load();
-                use nix::sys::ptrace::traceme;
-                traceme().map_err(|e| e.into())
-            });
-        }
-        self
-    }
-
-    fn build_command(&mut self) -> &mut Process {
-        let mut cmd = Command::new(&self.executable);
-        cmd.args(self.args.as_ref().unwrap());
-        self.command = Some(cmd);
-        self
-    }
-
-    fn new(executable: String, args: Option<Vec<String>>) -> Self {
-        Self {
-            executable,
-            args,
-            command: None,
-            pid: None,
-            process: None,
-        }
-    }
-}
 
 fn trace(
     process: &mut Process,
