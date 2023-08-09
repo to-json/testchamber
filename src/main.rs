@@ -78,7 +78,6 @@ impl MemLookup for MetaMemoryTable {
 
 struct NormalizedRegs {
     orig_rax: u64,
-    // normalized_orig_rax: i64,
     rdi: i64,
     rsi: i64,
     rdx: i64,
@@ -89,7 +88,6 @@ impl NormalizedRegs {
     fn from_regs(regs: &user_regs_struct, mt: &mut dyn MemLookup) -> NormalizedRegs {
         NormalizedRegs {
             orig_rax: regs.orig_rax,
-            // normalized_orig_rax: mt.obtain(regs.orig_rax),
             rdi: mt.obtain([regs.orig_rax, regs.rdi]),
             rsi: mt.obtain([regs.orig_rax, regs.rsi]),
             rdx: mt.obtain([regs.orig_rax, regs.rdx]),
@@ -121,7 +119,6 @@ fn print_normalized_syscall(regs: NormalizedRegs, syscall_table: &SyscallTable) 
 
 type SyscallTable = HashMap<u64, String>;
 fn load_syscall_table(path: PathBuf) -> Result<HashMap<u64, String>, Box<dyn std::error::Error>> {
-    // let json: serde_json::Value = serde_json::from_str(include_str!("syscall.json"))?;
     let json: serde_json::Value = serde_json::from_reader(File::open(path)?)?;
     let syscall_table: HashMap<u64, String> = json["aaData"]
         .as_array()
@@ -146,38 +143,6 @@ struct Process {
 }
 
 impl Process {
-    // fn trace(
-    //     &mut self,
-    //     memory_table: &mut dyn MemLookup,
-    //     syscall_table: &SyscallTable,
-    // ) -> Result<&mut Process, Box<dyn std::error::Error>> {
-    //     // every syscall has an entrance and exit point. in order to only log the
-    //     // syscall once, we toggle a var every loop
-    //     let mut is_sys_exit = false;
-    //     let child_pid = self.pid.unwrap();
-    //     loop {
-    //         ptrace::syscall(child_pid, None)?;
-    //         if is_sys_exit {
-    //             let wp = waitpid(child_pid, None)?;
-    //             match wp {
-    //                 WaitStatus::Exited(_, _) => {
-    //                     println!("exited");
-    //                     break;
-    //                 }
-    //                 _ => {
-    //                     let regs = ptrace::getregs(child_pid)?;
-    //                     let normalized_regs = NormalizedRegs::from_regs(&regs, memory_table);
-    //                     print_normalized_syscall(normalized_regs, &syscall_table);
-    //                 }
-    //             }
-    //         } else {
-    //             waitpid(child_pid, None)?;
-    //         }
-    //
-    //         is_sys_exit = !is_sys_exit;
-    //     }
-    //     Ok(self)
-    // }
     fn spawn(&mut self) -> &mut Process {
         let child = self.command.as_mut().unwrap().spawn().unwrap();
         let child_pid = Pid::from_raw(child.id() as _);
@@ -271,8 +236,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut memory_table = MetaMemoryTable::new();
     let (executable, args) = cli.command.split_first().unwrap();
     let mut cmd = Process::new(executable.to_string(), Some(args.into()));
-    cmd.build_command().set_pre_exec() .spawn();
-        // .trace(&mut memory_table, &syscall_table);
+    cmd.build_command().set_pre_exec().spawn();
     trace(&mut cmd, &mut memory_table, &syscall_table)
-    // Ok(())
 }
