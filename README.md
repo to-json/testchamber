@@ -37,9 +37,22 @@ to 'production ready'
 
 ### Dependencies
 
-For a variety of reasons, this is Linux only. Other than that, all dependencies
-should be correctly managed by Cargo; if this assumption does not hold, please
-open an issue.
+For a variety of reasons, this is Linux only. You will also need the `libseccomp`
+package for your distribution, and it's associated headers. In debian-derived
+distros, `libseccomp-dev` should do the trick, in arch-based distros, it's just
+`libseccomp`. I do not currently use other distributions, PRs welcome to update
+this document for your distro of choice.
+
+Other than that, all dependencies should be correctly managed by Cargo; if this
+assumption does not hold, please open an issue.
+
+A Dockerfile has been included for development on non-Linux machines, but is
+a bit of a waste if you're developing on Linux.
+
+    docker build -t testchamber .
+    docker run -it --rm --name testchamber-dev testchamber
+
+should be a decent starting point
 
 ### Usage
 
