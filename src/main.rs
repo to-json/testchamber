@@ -113,7 +113,7 @@ impl NormalizedRegs {
     }
 }
 
-fn print_normalized_syscall(regs: NormalizedRegs, syscall_table: &SyscallTable) {
+fn print_normalized_syscall(syscall_table: &SyscallTable, regs: NormalizedRegs) {
     println!("{}", regs.format(syscall_table, true));
 }
 
@@ -184,8 +184,8 @@ impl Process {
     }
 }
 
-fn trace<'a>(
-    process: &'a mut Process,
+fn trace(
+    process: &mut Process,
     memory_table: &mut dyn MemLookup,
     syscall_table: &SyscallTable,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -205,7 +205,7 @@ fn trace<'a>(
                 _ => {
                     let regs = ptrace::getregs(child_pid)?;
                     let normalized_regs = NormalizedRegs::from_regs(&regs, memory_table);
-                    print_normalized_syscall(normalized_regs, &syscall_table);
+                    print_normalized_syscall(&syscall_table, normalized_regs);
                 }
             }
         } else {
