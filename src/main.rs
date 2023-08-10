@@ -1,3 +1,4 @@
+#![feature(inherent_associated_types)]
 use std::{
     collections::HashMap,
     fs::File,
@@ -61,10 +62,12 @@ impl MetaMemoryTable {
 }
 
 trait MemLookup {
-    fn obtain(&mut self, k: SyscallKey) -> i64;
+    type MemKey;
+    fn obtain(&mut self, k: Self::MemKey) -> i64;
 }
 
 impl MemLookup for MetaMemoryTable {
+    type MemKey = SyscallKey;
     fn obtain(&mut self, k: SyscallKey) -> i64 {
         let [call, value] = k;
         if self.table.contains_key(&call) {
@@ -85,7 +88,7 @@ struct NormalizedRegs {
 }
 
 impl NormalizedRegs {
-    fn from_regs(regs: &user_regs_struct, mt: &mut dyn MemLookup) -> NormalizedRegs {
+    fn from_regs(regs: &user_regs_struct, mt: &mut dyn MemLookup<MemKey = SyscallKey>) -> NormalizedRegs {
         NormalizedRegs {
             orig_rax: regs.orig_rax,
             rdi: mt.obtain([regs.orig_rax, regs.rdi]),
@@ -113,6 +116,7 @@ impl NormalizedRegs {
     }
 }
 
+// print_normalized_syscall(&syscall_table, normalized_regs);
 fn print_normalized_syscall(syscall_table: &SyscallTable, regs: NormalizedRegs) {
     println!("{}", regs.format(syscall_table, true));
 }
@@ -137,7 +141,7 @@ fn load_syscall_table(path: PathBuf) -> Result<HashMap<u64, String>, Box<dyn std
 
 fn trace(
     process: &mut Process,
-    memory_table: &mut dyn MemLookup,
+    memory_table: &mut dyn MemLookup<MemKey = SyscallKey>,
     syscall_table: &SyscallTable,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // every syscall has an entrance and exit point. in order to only log the
