@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     fs::File,
-    path::PathBuf,
+    path::PathBuf, ops::Index,
 };
 
 use clap::Parser;
@@ -17,64 +17,8 @@ use owo_colors::OwoColorize;
 mod process;
 use process::Process;
 
-type SyscallKey = [u64; 2];
-
-struct MemoryTable {
-    table: HashMap<u64, i64>,
-    next: i64,
-}
-impl MemoryTable {
-    pub fn new() -> MemoryTable {
-        MemoryTable {
-            next: 0,
-            table: HashMap::new(),
-        }
-    }
-
-    fn append(&mut self, k: u64) -> i64 {
-        let idx = self.next;
-        self.table.insert(k, idx);
-        self.next += 1;
-        idx
-    }
-
-    // obtain as "lookup-or-append"
-    fn obtain(&mut self, k: u64) -> i64 {
-        if self.table.contains_key(&k) {
-            self.table[&k]
-        } else {
-            self.append(k)
-        }
-    }
-}
-
-struct MetaMemoryTable {
-    table: HashMap<u64, MemoryTable>,
-}
-
-impl MetaMemoryTable {
-    fn new() -> MetaMemoryTable {
-        MetaMemoryTable {
-            table: HashMap::new(),
-        }
-    }
-}
-
-trait MemLookup {
-    fn obtain(&mut self, k: SyscallKey) -> i64;
-}
-
-impl MemLookup for MetaMemoryTable {
-    fn obtain(&mut self, k: SyscallKey) -> i64 {
-        let [call, value] = k;
-        if self.table.contains_key(&call) {
-            self.table.get_mut(&call).unwrap().obtain(value)
-        } else {
-            self.table.insert(call, MemoryTable::new());
-            self.table.get_mut(&call).unwrap().obtain(value)
-        }
-    }
-}
+mod memtable;
+use memtable::{MemLookup, MetaMemoryTable};
 
 struct NormalizedRegs {
     orig_rax: u64,
@@ -88,17 +32,17 @@ impl NormalizedRegs {
     fn from_regs(regs: &user_regs_struct, mt: &mut dyn MemLookup) -> NormalizedRegs {
         NormalizedRegs {
             orig_rax: regs.orig_rax,
-            rdi: mt.obtain([regs.orig_rax, regs.rdi]),
-            rsi: mt.obtain([regs.orig_rax, regs.rsi]),
-            rdx: mt.obtain([regs.orig_rax, regs.rdx]),
-            rax: mt.obtain([regs.orig_rax, regs.rax]),
+            rdi: mt.obtain((regs.orig_rax, regs.rdi)),
+            rsi: mt.obtain((regs.orig_rax, regs.rsi)),
+            rdx: mt.obtain((regs.orig_rax, regs.rdx)),
+            rax: mt.obtain((regs.orig_rax, regs.rax)),
         }
     }
     fn format(&self, syscall_table: &SyscallTable, color: bool) -> String {
         if color {
             format!(
                 "{}({:x}, {:x}, {:x}, ...) = {:x}",
-                syscall_table[&self.orig_rax].green(),
+                syscall_table[self.orig_rax].green(),
                 self.rdi.blue(),
                 self.rsi.blue(),
                 self.rdx.blue(),
@@ -107,7 +51,7 @@ impl NormalizedRegs {
         } else {
             format!(
                 "{}({:x}, {:x}, {:x}, ...) = {:x}",
-                syscall_table[&self.orig_rax], self.rdi, self.rsi, self.rdx, self.rax,
+                syscall_table[self.orig_rax], self.rdi, self.rsi, self.rdx, self.rax,
             )
         }
     }
@@ -117,21 +61,32 @@ fn print_normalized_syscall(syscall_table: &SyscallTable, regs: NormalizedRegs) 
     println!("{}", regs.format(syscall_table, true));
 }
 
-type SyscallTable = HashMap<u64, String>;
-fn load_syscall_table(path: PathBuf) -> Result<HashMap<u64, String>, Box<dyn std::error::Error>> {
-    let json: serde_json::Value = serde_json::from_reader(File::open(path)?)?;
-    let syscall_table: HashMap<u64, String> = json["aaData"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|item| {
-            (
-                item[0].as_u64().unwrap(),
-                item[1].as_str().unwrap().to_owned(),
-            )
-        })
-        .collect();
-    Ok(syscall_table)
+struct SyscallTable {
+    map: HashMap<u64, String>
+}
+impl Index<u64> for SyscallTable{
+    type Output = String;
+    fn index(&self, idx: u64) -> &Self::Output {
+        &&self.map[&idx]
+    }
+
+}
+impl SyscallTable {
+    fn new(path: PathBuf) -> Result<SyscallTable, Box<dyn std::error::Error>> {
+        let json: serde_json::Value = serde_json::from_reader(File::open(path)?)?;
+        let call_map: HashMap<u64, String> = json["aaData"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|item| {
+                (
+                    item[0].as_u64().unwrap(),
+                    item[1].as_str().unwrap().to_owned(),
+                )
+            })
+            .collect();
+        Ok(SyscallTable{map: call_map})
+    }
 }
 
 
@@ -183,7 +138,7 @@ struct Cli {
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
-    let syscall_table = load_syscall_table(PathBuf::from(cli.syscall_table_path))?;
+    let syscall_table = SyscallTable::new(PathBuf::from(cli.syscall_table_path))?;
     let mut memory_table = MetaMemoryTable::new();
     let (executable, args) = cli.command.split_first().unwrap();
     let mut cmd = Process::new(executable.to_string(), Some(args.into()));
