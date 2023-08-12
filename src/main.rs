@@ -16,11 +16,10 @@ use syscall_table::SyscallTable;
 mod normalized_regs;
 use normalized_regs::NormalizedRegs;
 
-
 fn trace(
     process: &mut Process,
     memory_table: &mut dyn MemLookup,
-    printer: Box<dyn Fn(&NormalizedRegs)>
+    printer: Box<dyn Fn(&NormalizedRegs)>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // every syscall has an entrance and exit point. in order to only log the
     // syscall once, we toggle a var every loop
@@ -72,5 +71,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (executable, args) = cli.command.split_first().unwrap();
     let mut cmd = Process::new(executable.to_string(), Some(args.into()));
     cmd.build_command().set_pre_exec().spawn();
-    trace(&mut cmd, &mut memory_table,  print_syscall)
+    trace(&mut cmd, &mut memory_table, print_syscall)
 }
