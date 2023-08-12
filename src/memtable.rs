@@ -1,4 +1,3 @@
-// type SyscallKey = [u64; 2];
 use std::collections::HashMap;
 pub type SyscallKey = (u64, u64);
 
