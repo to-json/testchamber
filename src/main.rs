@@ -1,5 +1,6 @@
+use std::io::Error;
+
 use clap::Parser;
-use nix::errno::Errno;
 use nix::sys::{
     ptrace,
     wait::{waitpid, WaitStatus},
@@ -21,19 +22,20 @@ fn trace(
     process: &mut Process,
     memory_table: &mut dyn MemLookup,
     printer: Box<dyn Fn(&NormalizedRegs)>,
-) -> Result<(), Errno> {
+) -> Result<(), Error> {
     // every syscall has an entrance and exit point. in order to only log the
     // syscall once, we toggle a var every loop
-    let pre_exec = || -> Result<(), Errno>{
-                let mut filter =
-                    libseccomp::ScmpFilterContext::new(libseccomp::ScmpAction::Allow).unwrap();
-                let _ = filter.add_arch(libseccomp::ScmpArch::X8664);
-                let _ = filter.load();
-                use nix::sys::ptrace::traceme;
-                traceme()
+    let pre_exec = || -> Result<(), Error> {
+        let mut filter = libseccomp::ScmpFilterContext::new(libseccomp::ScmpAction::Allow).unwrap();
+        let _ = filter.add_arch(libseccomp::ScmpArch::X8664);
+        let _ = filter.load();
+        use nix::sys::ptrace::traceme;
+        traceme()?;
+        Ok(())
     };
-// 
-    process.pre_exec = Some(Box::new(pre_exec));
+    //
+    process.pre_exec = Some(pre_exec);
+    process.spawn();
 
     let mut is_sys_exit = false;
     let child_pid = process.pid.unwrap();
@@ -82,6 +84,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut memory_table = MetaMemoryTable::new();
     let (executable, args) = cli.command.split_first().unwrap();
     let mut cmd = Process::new(executable.to_string(), Some(args.into()));
-    cmd.build_command().set_pre_exec().spawn();
-    trace(&mut cmd, &mut memory_table, print_syscall).map_err(|e| Errno::into(e))
+    cmd.build_command();
+    trace(&mut cmd, &mut memory_table, print_syscall).map_err(|e| e.into())
 }

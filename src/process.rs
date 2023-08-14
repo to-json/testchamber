@@ -1,21 +1,23 @@
 use std::{
+    io::Error,
     os::unix::process::CommandExt,
     process::{Child, Command},
 };
 
-use nix::{unistd::Pid, errno::Errno};
+use nix::unistd::Pid;
 
 pub struct Process {
     pub executable: String,
     pub args: Option<Vec<String>>,
     pub command: Option<Command>,
     pub pid: Option<Pid>,
-        pub process: Option<Child>,
-        pub pre_exec: Option<Box<dyn FnMut() -> Result<(), Errno> + Send + Sync + 'static>>
+    pub process: Option<Child>,
+    pub pre_exec: Option<fn() -> Result<(), Error>>,
 }
 
 impl Process {
     pub fn spawn(&mut self) -> &mut Process {
+        self.set_pre_exec();
         let child = self.command.as_mut().unwrap().spawn().unwrap();
         let child_pid = Pid::from_raw(child.id() as _);
         self.pid = Some(child_pid);
@@ -23,19 +25,12 @@ impl Process {
         self
     }
 
-    pub fn set_pre_exec(&mut self) -> &mut Process {
+    pub fn set_pre_exec(&mut self) {
         // command.pre_exec is intrinsically 'unsafe'
+        let pre_exec = self.pre_exec.unwrap();
         unsafe {
-            self.command.as_mut().unwrap().pre_exec(|| {
-                let mut filter =
-                    libseccomp::ScmpFilterContext::new(libseccomp::ScmpAction::Allow).unwrap();
-                let _ = filter.add_arch(libseccomp::ScmpArch::X8664);
-                let _ = filter.load();
-                use nix::sys::ptrace::traceme;
-                traceme().map_err(|e| e.into())
-            });
-        }
-        self
+            self.command.as_mut().unwrap().pre_exec(pre_exec);
+        };
     }
 
     pub fn build_command(&mut self) -> &mut Process {
@@ -52,7 +47,7 @@ impl Process {
             command: None,
             pid: None,
             process: None,
-            pre_exec: None
+            pre_exec: None,
         }
     }
 }
