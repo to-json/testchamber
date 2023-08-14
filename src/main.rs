@@ -1,4 +1,5 @@
 use clap::Parser;
+use nix::errno::Errno;
 use nix::sys::{
     ptrace,
     wait::{waitpid, WaitStatus},
@@ -20,9 +21,20 @@ fn trace(
     process: &mut Process,
     memory_table: &mut dyn MemLookup,
     printer: Box<dyn Fn(&NormalizedRegs)>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Errno> {
     // every syscall has an entrance and exit point. in order to only log the
     // syscall once, we toggle a var every loop
+    let pre_exec = || -> Result<(), Errno>{
+                let mut filter =
+                    libseccomp::ScmpFilterContext::new(libseccomp::ScmpAction::Allow).unwrap();
+                let _ = filter.add_arch(libseccomp::ScmpArch::X8664);
+                let _ = filter.load();
+                use nix::sys::ptrace::traceme;
+                traceme()
+    };
+// 
+    process.pre_exec = Some(Box::new(pre_exec));
+
     let mut is_sys_exit = false;
     let child_pid = process.pid.unwrap();
     loop {
@@ -71,5 +83,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (executable, args) = cli.command.split_first().unwrap();
     let mut cmd = Process::new(executable.to_string(), Some(args.into()));
     cmd.build_command().set_pre_exec().spawn();
-    trace(&mut cmd, &mut memory_table, print_syscall)
+    trace(&mut cmd, &mut memory_table, print_syscall).map_err(|e| Errno::into(e))
 }

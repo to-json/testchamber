@@ -3,14 +3,15 @@ use std::{
     process::{Child, Command},
 };
 
-use nix::unistd::Pid;
+use nix::{unistd::Pid, errno::Errno};
 
 pub struct Process {
     pub executable: String,
     pub args: Option<Vec<String>>,
     pub command: Option<Command>,
     pub pid: Option<Pid>,
-    pub process: Option<Child>,
+        pub process: Option<Child>,
+        pub pre_exec: Option<Box<dyn FnMut() -> Result<(), Errno> + Send + Sync + 'static>>
 }
 
 impl Process {
@@ -51,6 +52,7 @@ impl Process {
             command: None,
             pid: None,
             process: None,
+            pre_exec: None
         }
     }
 }
