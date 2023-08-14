@@ -23,8 +23,6 @@ fn trace(
     memory_table: &mut dyn MemLookup,
     printer: Box<dyn Fn(&NormalizedRegs)>,
 ) -> Result<(), Error> {
-    // every syscall has an entrance and exit point. in order to only log the
-    // syscall once, we toggle a var every loop
     let pre_exec = || -> Result<(), Error> {
         let mut filter = libseccomp::ScmpFilterContext::new(libseccomp::ScmpAction::Allow).unwrap();
         let _ = filter.add_arch(libseccomp::ScmpArch::X8664);
@@ -38,6 +36,8 @@ fn trace(
     process.set_pre_exec()?;
     process.spawn();
 
+    // every syscall has an entrance and exit point. in order to only log the
+    // syscall once, we toggle a var every loop
     let mut is_sys_exit = false;
     let child_pid = process.pid.unwrap();
     loop {
