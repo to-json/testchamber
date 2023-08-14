@@ -35,6 +35,7 @@ fn trace(
     };
     //
     process.pre_exec = Some(pre_exec);
+    process.set_pre_exec()?;
     process.spawn();
 
     let mut is_sys_exit = false;
