@@ -11,7 +11,7 @@ pub struct NormalizedRegs {
 }
 
 impl NormalizedRegs {
-    pub fn from_regs(regs: &user_regs_struct, mt: &mut dyn MemLookup) -> NormalizedRegs {
+    pub fn from_regs(regs: &user_regs_struct, mt: &mut dyn MemLookup<Entry=i64>) -> NormalizedRegs {
         NormalizedRegs {
             orig_rax: regs.orig_rax,
             rdi: mt.obtain((regs.orig_rax, regs.rdi)),

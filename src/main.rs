@@ -1,3 +1,8 @@
+#![feature(type_alias_impl_trait)]
+#![feature(return_position_impl_trait_in_trait)]
+#![feature(impl_trait_in_assoc_type)]
+#![feature(associated_type_defaults)]
+#![feature(trait_alias)]
 use std::io::Error;
 
 use clap::Parser;
@@ -20,7 +25,7 @@ use normalized_regs::NormalizedRegs;
 
 fn trace(
     process: &mut Process,
-    memory_table: &mut dyn MemLookup,
+    memory_table: &mut dyn MemLookup<Entry=i64>,
     printer: Box<dyn Fn(&NormalizedRegs)>,
 ) -> Result<(), Error> {
     let pre_exec = || -> Result<(), Error> {

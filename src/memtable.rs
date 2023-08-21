@@ -1,3 +1,4 @@
+// use std::{collections::HashMap, fmt::Display};
 use std::collections::HashMap;
 pub type SyscallKey = (u64, u64);
 
@@ -43,10 +44,12 @@ impl MetaMemoryTable {
 }
 
 pub trait MemLookup {
-    fn obtain(&mut self, k: SyscallKey) -> i64;
+    type Entry;
+    fn obtain(&mut self, k: SyscallKey) -> Self::Entry;
 }
 
 impl MemLookup for MetaMemoryTable {
+    type Entry = i64;
     fn obtain(&mut self, k: SyscallKey) -> i64 {
         let (call, value) = k;
         if self.table.contains_key(&call) {
