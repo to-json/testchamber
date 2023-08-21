@@ -21,12 +21,13 @@ mod syscall_table;
 use syscall_table::SyscallTable;
 
 mod normalized_regs;
-use normalized_regs::NormalizedRegs;
+use normalized_regs::I64Regs;
+use normalized_regs::Registers;
 
-fn trace(
+fn trace<T: Registers>(
     process: &mut Process,
-    memory_table: &mut dyn MemLookup<Entry = i64>,
-    printer: Box<dyn Fn(&NormalizedRegs)>,
+    memory_table: &mut impl MemLookup<Entry = T::MemType>,
+    printer: Box<dyn Fn(&T)>,
 ) -> Result<(), Error> {
     let pre_exec = || -> Result<(), Error> {
         let mut filter = libseccomp::ScmpFilterContext::new(libseccomp::ScmpAction::Allow).unwrap();
@@ -56,7 +57,7 @@ fn trace(
                 }
                 _ => {
                     let regs = ptrace::getregs(child_pid)?;
-                    let normalized_regs = NormalizedRegs::from_regs(&regs, memory_table);
+                    let normalized_regs = T::from_regs(&regs, memory_table);
                     printer(&normalized_regs);
                 }
             }
@@ -86,10 +87,10 @@ struct Cli {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     let syscall_table = SyscallTable::new(cli.syscall_table_path)?;
-    let print_syscall = NormalizedRegs::syscall_printer(syscall_table)?;
+    let print_syscall = I64Regs::printer(syscall_table)?;
     let mut memory_table = MetaMemoryTable::new();
     let (executable, args) = cli.command.split_first().unwrap();
     let mut cmd = Process::new(executable.to_string(), Some(args.into()));
     cmd.build_command();
-    trace(&mut cmd, &mut memory_table, print_syscall).map_err(|e| e.into())
+    trace::<I64Regs>(&mut cmd, &mut memory_table, print_syscall).map_err(|e| e.into())
 }

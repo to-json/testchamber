@@ -2,7 +2,7 @@ use crate::{MemLookup, SyscallTable};
 use nix::libc::user_regs_struct;
 use owo_colors::OwoColorize;
 
-pub struct NormalizedRegs {
+pub struct I64Regs {
     orig_rax: u64,
     rdi: i64,
     rsi: i64,
@@ -10,12 +10,22 @@ pub struct NormalizedRegs {
     rax: i64,
 }
 
-impl NormalizedRegs {
-    pub fn from_regs(
+pub trait Registers {
+    type MemType;
+    fn from_regs(regs: &user_regs_struct, mt: &mut (impl MemLookup<Entry = Self::MemType> + ?Sized)) -> Self;
+    fn format(&self, syscall_table: &SyscallTable, color: bool) -> String;
+    fn printer<'a>(
+        syscall_table: SyscallTable,
+    ) -> Result<Box<dyn Fn(&Self) + 'a>, Box<dyn std::error::Error>>;
+}
+
+impl Registers for I64Regs {
+    type MemType = i64;
+    fn from_regs(
         regs: &user_regs_struct,
-        mt: &mut dyn MemLookup<Entry = i64>,
-    ) -> NormalizedRegs {
-        NormalizedRegs {
+        mt: &mut (impl MemLookup<Entry = Self::MemType> + ?Sized),
+    ) -> I64Regs {
+        I64Regs {
             orig_rax: regs.orig_rax,
             rdi: mt.obtain((regs.orig_rax, regs.rdi)),
             rsi: mt.obtain((regs.orig_rax, regs.rsi)),
@@ -23,7 +33,7 @@ impl NormalizedRegs {
             rax: mt.obtain((regs.orig_rax, regs.rax)),
         }
     }
-    pub fn format(&self, syscall_table: &SyscallTable, color: bool) -> String {
+    fn format(&self, syscall_table: &SyscallTable, color: bool) -> String {
         if color {
             format!(
                 "{}({:x}, {:x}, {:x}, ...) = {:x}",
@@ -40,10 +50,10 @@ impl NormalizedRegs {
             )
         }
     }
-    pub fn syscall_printer<'a>(
+    fn printer<'a>(
         syscall_table: SyscallTable,
-    ) -> Result<Box<dyn Fn(&NormalizedRegs) + 'a>, Box<dyn std::error::Error>> {
-        Ok(Box::new(move |regs: &NormalizedRegs| {
+    ) -> Result<Box<dyn Fn(&I64Regs) + 'a>, Box<dyn std::error::Error>> {
+        Ok(Box::new(move |regs: &I64Regs| {
             println!("{}", regs.format(&syscall_table, true));
         }))
     }
