@@ -25,7 +25,7 @@ use normalized_regs::NormalizedRegs;
 
 fn trace(
     process: &mut Process,
-    memory_table: &mut dyn MemLookup<Entry=i64>,
+    memory_table: &mut dyn MemLookup<Entry = i64>,
     printer: Box<dyn Fn(&NormalizedRegs)>,
 ) -> Result<(), Error> {
     let pre_exec = || -> Result<(), Error> {
