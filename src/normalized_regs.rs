@@ -12,7 +12,10 @@ pub struct I64Regs {
 
 pub trait Registers {
     type MemType;
-    fn from_regs(regs: &user_regs_struct, mt: &mut (impl MemLookup<Entry = Self::MemType> + ?Sized)) -> Self;
+    fn from_regs(
+        regs: &user_regs_struct,
+        mt: &mut (impl MemLookup<Entry = Self::MemType> + ?Sized),
+    ) -> Self;
     fn format(&self, syscall_table: &SyscallTable, color: bool) -> String;
     fn printer<'a>(
         syscall_table: SyscallTable,
