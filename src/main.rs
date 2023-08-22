@@ -5,22 +5,13 @@
 #![feature(trait_alias)]
 
 use clap::Parser;
+use testchamber;
+use testchamber::memtable::MetaMemoryTable;
+use testchamber::normalized_regs::{I64Regs, Registers};
+use testchamber::process::Process;
+use testchamber::syscall_table::SyscallTable;
+use testchamber::trace::trace;
 
-mod process;
-use process::Process;
-
-mod memtable;
-use memtable::{MemLookup, MetaMemoryTable};
-
-mod syscall_table;
-use syscall_table::SyscallTable;
-
-mod normalized_regs;
-use normalized_regs::I64Regs;
-use normalized_regs::Registers;
-
-mod trace;
-use trace::trace;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -44,5 +35,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (executable, args) = cli.command.split_first().unwrap();
     let mut cmd = Process::new(executable.to_string(), Some(args.into()));
     cmd.build_command();
+    println!("lol");
     trace::<I64Regs>(&mut cmd, &mut memory_table, print_syscall).map_err(|e| e.into())
 }

@@ -1,4 +1,5 @@
-use crate::{MemLookup, SyscallTable};
+use crate::memtable::MemLookup;
+use crate::syscall_table::SyscallTable;
 use nix::libc::user_regs_struct;
 use owo_colors::OwoColorize;
 
