@@ -9,14 +9,14 @@ pub struct SyscallTable {
 impl Index<u64> for SyscallTable {
     type Output = String;
     fn index(&self, idx: u64) -> &Self::Output {
-        &&self.call_map[&idx]
+        &self.call_map[&idx]
     }
 }
 
 impl Index<String> for SyscallTable {
     type Output = Vec<String>;
     fn index(&self, idx: String) -> &Self::Output {
-        &&self._args[&idx]
+        &self._args[&idx]
     }
 }
 
