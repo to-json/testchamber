@@ -1,5 +1,6 @@
 use crate::memtable::MemLookup;
 use crate::syscall_table::SyscallTable;
+use crate::BoxedError;
 use nix::libc::user_regs_struct;
 use owo_colors::OwoColorize;
 
@@ -13,14 +14,13 @@ pub struct I64Regs {
 
 pub trait Registers {
     type MemType;
+    type RegisterPrinter<'a> = Box<dyn Fn(&Self) + 'a>;
     fn from_regs(
         regs: &user_regs_struct,
         mt: &mut (impl MemLookup<Entry = Self::MemType> + ?Sized),
     ) -> Self;
     fn format(&self, syscall_table: &SyscallTable, color: bool) -> String;
-    fn printer<'a>(
-        syscall_table: SyscallTable,
-    ) -> Result<Box<dyn Fn(&Self) + 'a>, Box<dyn std::error::Error>>;
+    fn printer<'a>(syscall_table: SyscallTable) -> Result<Self::RegisterPrinter<'a>, BoxedError>;
 }
 
 impl Registers for I64Regs {
@@ -54,9 +54,7 @@ impl Registers for I64Regs {
             )
         }
     }
-    fn printer<'a>(
-        syscall_table: SyscallTable,
-    ) -> Result<Box<dyn Fn(&I64Regs) + 'a>, Box<dyn std::error::Error>> {
+    fn printer<'a>(syscall_table: SyscallTable) -> Result<Box<dyn Fn(&I64Regs) + 'a>, BoxedError> {
         Ok(Box::new(move |regs: &I64Regs| {
             println!("{}", regs.format(&syscall_table, true));
         }))

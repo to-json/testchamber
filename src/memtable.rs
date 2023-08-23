@@ -6,6 +6,7 @@ struct MemoryTable {
     table: HashMap<u64, i64>,
     next: i64,
 }
+
 impl MemoryTable {
     pub fn new() -> MemoryTable {
         MemoryTable {
@@ -31,6 +32,12 @@ impl MemoryTable {
     }
 }
 
+impl Default for MemoryTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub struct MetaMemoryTable {
     table: HashMap<u64, MemoryTable>,
 }
@@ -43,6 +50,12 @@ impl MetaMemoryTable {
     }
 }
 
+impl Default for MetaMemoryTable {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub trait MemLookup {
     type Entry;
     fn obtain(&mut self, k: SyscallKey) -> Self::Entry;
@@ -52,11 +65,6 @@ impl MemLookup for MetaMemoryTable {
     type Entry = i64;
     fn obtain(&mut self, k: SyscallKey) -> i64 {
         let (call, value) = k;
-        if self.table.contains_key(&call) {
-            self.table.get_mut(&call).unwrap().obtain(value)
-        } else {
-            self.table.insert(call, MemoryTable::new());
-            self.table.get_mut(&call).unwrap().obtain(value)
-        }
+        self.table.entry(call).or_default().obtain(value)
     }
 }

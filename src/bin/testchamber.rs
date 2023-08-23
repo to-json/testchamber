@@ -1,17 +1,16 @@
-#![feature(type_alias_impl_trait)]
-#![feature(return_position_impl_trait_in_trait)]
-#![feature(impl_trait_in_assoc_type)]
-#![feature(associated_type_defaults)]
-#![feature(trait_alias)]
+// Keeping this list of features around because I meant to use a few of them
+// #![feature(type_alias_impl_trait)]
+// #![feature(return_position_impl_trait_in_trait)]
+// #![feature(impl_trait_in_assoc_type)]
+// #![feature(trait_alias)]
 
 use clap::Parser;
-use testchamber;
 use testchamber::memtable::MetaMemoryTable;
 use testchamber::normalized_regs::{I64Regs, Registers};
 use testchamber::process::Process;
 use testchamber::syscall_table::SyscallTable;
 use testchamber::trace::trace;
-
+use testchamber::BoxedError;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -27,7 +26,7 @@ struct Cli {
     syscall_table_path: String,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), BoxedError> {
     let cli = Cli::parse();
     let syscall_table = SyscallTable::new(cli.syscall_table_path)?;
     let print_syscall = I64Regs::printer(syscall_table)?;

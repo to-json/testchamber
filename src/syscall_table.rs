@@ -2,6 +2,8 @@ use core::slice::Iter;
 use std::{collections::HashMap, fs::File, ops::Index, path::PathBuf};
 
 use serde_json::Value;
+
+use crate::BoxedError;
 pub struct SyscallTable {
     call_map: HashMap<u64, String>,
     _args: HashMap<String, Vec<String>>,
@@ -21,7 +23,7 @@ impl Index<String> for SyscallTable {
 }
 
 impl SyscallTable {
-    pub fn new(p: String) -> Result<SyscallTable, Box<dyn std::error::Error>> {
+    pub fn new(p: String) -> Result<SyscallTable, BoxedError> {
         let path = PathBuf::from(p);
         let json: serde_json::Value = serde_json::from_reader(File::open(path)?)?;
         let json_iter: Iter<'_, Value> = json["aaData"].as_array().unwrap().iter();
