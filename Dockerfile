@@ -5,10 +5,10 @@ FROM rustlang/rust:nightly-bookworm
 WORKDIR '/test'
 RUN apt update
 RUN apt install libseccomp-dev
-COPY Cargo.toml Cargo.lock syscall.json /test/
 # --deps-only no longer exists in cargo; this simulates building deps-only
 # for caching purposes, so that later `docker build` runs needn't build all
 # dependencies every time
+COPY Cargo.toml Cargo.lock syscall.json /test/
 RUN \
     mkdir /test/src && \
     echo 'fn main() {}' > /test/src/main.rs && \

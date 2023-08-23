@@ -3,12 +3,20 @@ FROM rustlang/rust:nightly-bookworm
 WORKDIR '/test'
 RUN apt update
 RUN apt install libseccomp-dev
-COPY . .
-RUN cargo install --path .
-RUN cargo build
 RUN rustup component add rust-src
 RUN curl -L https://github.com/rust-lang/rust-analyzer/releases/latest/download/rust-analyzer-x86_64-unknown-linux-gnu.gz | gunzip -c - > ./rust-analyzer
 RUN chmod +x ./rust-analyzer
-RUN echo lol > ./lol.txt
-CMD testchamber cat ./lol.txt
+# --deps-only no longer exists in cargo; this simulates building deps-only
+# for caching purposes, so that later `docker build` runs needn't build all
+# dependencies every time
+COPY Cargo.toml Cargo.lock syscall.json /test/
+RUN \
+    mkdir /test/src && \
+    echo 'fn main() {}' > /test/src/main.rs && \
+    cargo build && \
+    rm -Rvf /test/src && \
+    mkdir /test/src
+COPY src /test/src
+# resume normalcy
+RUN cargo build
 ENTRYPOINT ["./rust-analyzer"]
