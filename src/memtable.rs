@@ -2,14 +2,14 @@
 use std::collections::HashMap;
 pub type SyscallKey = (u64, u64);
 
-struct MemoryTable {
+struct SequentialMemoryTable {
     table: HashMap<u64, i64>,
     next: i64,
 }
 
-impl MemoryTable {
-    pub fn new() -> MemoryTable {
-        MemoryTable {
+impl SequentialMemoryTable {
+    pub fn new() -> SequentialMemoryTable {
+        SequentialMemoryTable {
             next: 0,
             table: HashMap::new(),
         }
@@ -32,14 +32,14 @@ impl MemoryTable {
     }
 }
 
-impl Default for MemoryTable {
+impl Default for SequentialMemoryTable {
     fn default() -> Self {
         Self::new()
     }
 }
 
 pub struct MetaMemoryTable {
-    table: HashMap<u64, MemoryTable>,
+    table: HashMap<u64, SequentialMemoryTable>,
 }
 
 impl MetaMemoryTable {
