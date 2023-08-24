@@ -5,9 +5,9 @@ use nix::sys::{
     wait::{waitpid, WaitStatus},
 };
 
-use crate::{memtable::MemLookup, normalized_regs::Registers, process::Process};
+use crate::{memtable::MemLookup, normalized_regs::Syscall, process::Process};
 
-pub fn trace<T: Registers>(
+pub fn trace<T: Syscall>(
     process: &mut Process,
     memory_table: &mut impl MemLookup<Entry = T::MemType>,
     printer: Box<dyn Fn(&T)>,

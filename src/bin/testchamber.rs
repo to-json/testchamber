@@ -6,7 +6,7 @@
 
 use clap::Parser;
 use testchamber::memtable::MetaMemoryTable;
-use testchamber::normalized_regs::{I64Regs, Registers};
+use testchamber::normalized_regs::{I64Regs, Syscall};
 use testchamber::process::Process;
 use testchamber::syscall_table::SyscallTable;
 use testchamber::trace::trace;
@@ -34,6 +34,5 @@ fn main() -> Result<(), BoxedError> {
     let (executable, args) = cli.command.split_first().unwrap();
     let mut cmd = Process::new(executable.to_string(), Some(args.into()));
     cmd.build_command();
-    println!("lol");
     trace::<I64Regs>(&mut cmd, &mut memory_table, print_syscall).map_err(|e| e.into())
 }

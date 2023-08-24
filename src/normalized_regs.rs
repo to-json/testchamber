@@ -12,7 +12,15 @@ pub struct I64Regs {
     rax: i64,
 }
 
-pub trait Registers {
+// pub struct I64Regs {
+//     orig_rax: u64,
+//     rdi: i64,
+//     rsi: i64,
+//     rdx: i64,
+//     rax: i64,
+// }
+
+pub trait Syscall {
     type MemType;
     type RegisterPrinter<'a> = Box<dyn Fn(&Self) + 'a>;
     fn from_regs(
@@ -23,7 +31,7 @@ pub trait Registers {
     fn printer<'a>(syscall_table: SyscallTable) -> Result<Self::RegisterPrinter<'a>, BoxedError>;
 }
 
-impl Registers for I64Regs {
+impl Syscall for I64Regs {
     type MemType = i64;
     fn from_regs(
         regs: &user_regs_struct,
