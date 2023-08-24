@@ -92,12 +92,30 @@ licensed project. Future versions may shift towards something more GPL-like
 
 ## Acknowledgments
 
+8/9/23
+
 I mentioned [rue][1] and [timeless][4] above; I also used a pretty cool
 [readme template][5] I found on github. Shouts out to the Linux community
 as well; this would be much more difficult on other OSes.
+
+8/24/23
+
+Found a project, [lurk][6], that I will probably borrow liberally from;
+it does much of what I'm trying to do in reimplimenting most of strace,
+though our aspirations differ
+
+Should also shout out the Rust team, as I though I would have to write
+a bunch of stuff to serialize arbitrary c structs but [`libc`][7] has my
+back.
+
+Not gonna individually link every other dependency of the project, but be
+sure to peep [`Cargo.toml`][8], everything I grabbed is pretty good.
 
 [1]: https://fasterthanli.me
 [2]: https://github.com/fasterthanlime/rue/blob/main/src/main.rs
 [3]: https://www.youtube.com/watch?v=engduNoI6DE
 [4]: https://github.com/polydawn/timeless
 [5]: https://gist.githubusercontent.com/DomPizzie/7a5ff55ffa9081f2de27c315f5018afc/raw/d59043abbb123089ad6602aba571121b71d91d7f/README-Template.md
+[6]: https://github.com/JakWai01/lurk
+[7]: https://github.com/rust-lang/libc
+[8]: https://github.com/to-json/testchamber/blob/main/Cargo.toml
