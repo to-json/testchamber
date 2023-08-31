@@ -30,6 +30,8 @@ pub fn trace<T: Syscall>(
     let mut is_sys_exit = false;
     let child_pid = process.pid.unwrap();
     loop {
+        // This is getting syscalls coming from my own rust process; gotta figure out wtf is up
+        // with that
         ptrace::syscall(child_pid, None)?;
         if is_sys_exit {
             let wp = waitpid(child_pid, None)?;
@@ -58,9 +60,9 @@ pub fn trace<T: Syscall>(
                             // those to target, which should actually be Vec<u8>, and then
                             // truncate target to `size` with Vec::truncate
                             let tmp = ptrace::read(child_pid, (ptr as usize + (i as usize)) as *mut libc::c_void)?.to_ne_bytes();
-                            for j in tmp.iter() {
-                                let idx = i+(*j as usize);
-                                target[idx] = tmp[*j as usize];
+                            for (j, _) in tmp.iter().enumerate() {
+                                let idx = i+j;
+                                target[idx] = tmp[j];
                             };
 
                         }
@@ -68,6 +70,7 @@ pub fn trace<T: Syscall>(
                         unsafe {
                             _ret = std::mem::transmute(target);
                         };
+                        dbg!(_ret);
                     };
                     printer(&normalized_regs);
                 }
