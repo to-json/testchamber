@@ -20,6 +20,7 @@ libseccomp = { git = "https://github.com/libseccomp-rs/libseccomp-rs.git"}
 # seccomp = "0.1.2"
 clap ={version = "4.3.19", features = ["derive"]}
 libc = "0.2"
+syscalls = { version = "0.6", features = ["serde"] }
 
 [dev-dependencies]
 proptest-derive = "0.3.0"
