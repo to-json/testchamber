@@ -57,16 +57,16 @@ pub fn trace<T: Syscall>(
                             // a slice of bytes with to_ne_bytes and then appending
                             // those to target, which should actually be Vec<u8>, and then
                             // truncate target to `size` with Vec::truncate
-                            let mut tmp = ptrace::read(child_pid, (ptr.clone() as usize + (i as usize)) as *mut libc::c_void)?.to_ne_bytes();
-                            for (j, v) in tmp.iter().enumerate() {
-                                let idx = i+j;
-                                target[idx] = tmp[j];
+                            let tmp = ptrace::read(child_pid, (ptr as usize + (i as usize)) as *mut libc::c_void)?.to_ne_bytes();
+                            for j in tmp.iter() {
+                                let idx = i+(*j as usize);
+                                target[idx] = tmp[*j as usize];
                             };
 
                         }
-                        let ret: libc::stat;
+                        let _ret: libc::stat;
                         unsafe {
-                            ret = std::mem::transmute(target);
+                            _ret = std::mem::transmute(target);
                         };
                     };
                     printer(&normalized_regs);
