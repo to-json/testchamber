@@ -1,4 +1,5 @@
 #![feature(associated_type_defaults)]
+#![feature(int_roundings)]
 pub mod memtable;
 pub mod normalized_regs;
 pub mod process;

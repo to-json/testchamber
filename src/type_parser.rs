@@ -1,16 +1,102 @@
+#[allow(unused_imports)]
+// types
+use libc::{
+    __s32, __u32, __u64, clockid_t, fd_set, gid_t, key_t, loff_t, mqd_t, off_t, pid_t, siginfo_t,
+    sigset_t, size_t, stack_t, timer_t, uid_t,
+};
+//  "cap_user_data_t",
+//  "umode_t",
+//  "cap_user_header_t",
+//  "qid_t",
+//  "key_serial_t",
+//  "__kernel_old_time_t",
+//  "enum",
+//  "u32",
+//  "aio_context_t"}
+
+// structs
+#[allow(unused_imports)]
+use libc::{
+    clone_args,
+    epoll_event,
+    iovec,
+    mmsghdr,
+    mq_attr,
+    msqid_ds,
+    open_how,
+    pollfd,
+    rlimit,
+    rlimit64,
+    rusage,
+    sched_param,
+    sembuf,
+    shmid_ds,
+    sigaction,
+    sigevent,
+    sockaddr,
+    stat,
+    statfs,
+    statx,
+    sysinfo,
+    // unsure if this 'timezone' is the right one
+    timezone,
+    tms,
+    utimbuf,
+};
+
+// {"__kernel_old_timeval",
+//  "kexec_segment",
+//  "file_handle",
+//  "linux_dirent",
+//  "siginfo",
+//  "mq_attr",
+//  "robust_list_head",
+//  "mount_attr",
+//  "io_uring_params",
+//  "rseq",
+//  "__kernel_old_itimerval",
+//  "ustat",
+//  "futex_waitv",
+//  "__kernel_itimerspec",
+//  "__kernel_timex",
+//  "timezone",
+//  "new_utsname"
+//  "perf_event_attr",
+//  "shmid_ds",
+//  "getcpu_cache",
+//  "io_event",
+//  "statx",
+//  "sigevent",
+//  "stat",
+//  "__kernel_timespec",
+//  "iocb",
+//  "sched_attr",
+//  "linux_dirent64",
+//  "clone_args",
+//  "tms",
+//  "msgbuf",
+//  "landlock_ruleset_attr",
+//  "rlimit64",
+//  "open_how",
+//  "__aio_sigset",
+//  "user_msghdr"}
+//
+//
+// Unions:
+// {"bpf_attr"}
 
 
 pub fn type_parser(t: &str) {
     dbg!(t);
-
-
+    let _tokens = t.split(" ");
 }
 
-enum Type {
+enum _RealType {
     Char,
     Double,
     Float,
     Int,
+    Long,
     Void,
     Struct,
     Union,
@@ -20,23 +106,14 @@ enum Type {
     Unsigned,
 }
 
-enum Qualifier {
-    Const,
-    Volatile // This is never used for syscalls, but, may be handy later
+enum _Macro {
+    Userspace,
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
+enum _Qualifier {
+    Const,
+    Volatile, // This is never used for syscalls, but, may be handy later
+}
 
 /// I don't know what this will look like, but type `bpf_attr` is a union of 4
 /// structs that are only determinable by runtime context. there will probably

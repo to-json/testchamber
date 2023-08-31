@@ -41,6 +41,34 @@ pub fn trace<T: Syscall>(
                 _ => {
                     let regs = ptrace::getregs(child_pid)?;
                     let normalized_regs = T::from_regs(&regs, memory_table);
+                    // todo: holy shit i didn't actually expect this to work yet
+                    //       gotta extract this to a macro
+                    if regs.orig_rax == 262 {
+                        let ptr = regs.rdx;
+                        const SIZE: usize = std::mem::size_of::<libc::stat>();
+                        let word_size = SIZE.div_ceil(8);
+                        let mut target: [u8; SIZE] = [0; SIZE];
+                        for i in 0..word_size {
+                            // This insane shit reads a number of words from child process
+                            // memory sufficient to rehydrate it as the struct it ostensibly
+                            // represents according to the syscall docs
+                            //
+                            // Gotta make it more insane by converting each i64 into
+                            // a slice of bytes with to_ne_bytes and then appending
+                            // those to target, which should actually be Vec<u8>, and then
+                            // truncate target to `size` with Vec::truncate
+                            let mut tmp = ptrace::read(child_pid, (ptr.clone() as usize + (i as usize)) as *mut libc::c_void)?.to_ne_bytes();
+                            for (j, v) in tmp.iter().enumerate() {
+                                let idx = i+j;
+                                target[idx] = tmp[j];
+                            };
+
+                        }
+                        let ret: libc::stat;
+                        unsafe {
+                            ret = std::mem::transmute(target);
+                        };
+                    };
                     printer(&normalized_regs);
                 }
             }

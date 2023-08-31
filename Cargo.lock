@@ -555,6 +555,7 @@ name = "testchamber"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "libc",
  "libseccomp",
  "nix",
  "owo-colors",
